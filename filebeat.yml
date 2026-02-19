@@ -1,0 +1,26 @@
+filebeat.inputs:
+  - type: filestream
+    id: docker-containers
+    paths:
+      - /var/lib/docker/containers/*/*-json.log
+
+    parsers:
+      - ndjson:
+          target: ""
+          add_error_key: true
+
+processors:
+  - add_docker_metadata:
+      host: "unix:///var/run/docker.sock"
+
+  # keep ONLY your app container
+  - drop_event:
+      when:
+        not:
+          equals:
+            container.name: "observability-app"
+
+output.logstash:
+  hosts: ["logstash:5044"]
+
+logging.level: info

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="30 seconds">
+
+    <!-- =========================
+         Defaults / properties
+         ========================= -->
+    <property name="APP_NAME" value="${spring.application.name:-}"/>
+    <property name="APP_ENV"  value="${APP_ENV:-${spring.profiles.active:-default}}"/>
+    <property name="APP_VER"  value="${APP_VERSION:-}"/>
+    <property name="HOSTNAME" value="${HOSTNAME:-}"/>
+
+    <!-- =========================
+         Baseline framework logging
+         ========================= -->
+    <logger name="org.springframework" level="INFO"/>
+    <logger name="org.apache.catalina" level="INFO"/>
+
+    <!-- Noise reduction: suppress dispatcherServlet exception spam -->
+    <logger name="org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/].[dispatcherServlet]"
+            level="OFF" additivity="false"/>
+
+    <!-- =========================
+         JSON Console Appender
+         ========================= -->
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+
+            <!-- Key production switches -->
+            <omitEmptyFields>true</omitEmptyFields>
+            <omitEmptyObjects>true</omitEmptyObjects>
+            <writeNullValues>false</writeNullValues>
+
+            <providers>
+                <!-- Timestamp -->
+                <timestamp>
+                    <timeZone>UTC</timeZone>
+                    <!-- ISO-8601 is default; keep explicit if you want:
+                    <pattern>yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'</pattern>
+                    -->
+                </timestamp>
+
+                <!-- Standard metadata -->
+                <logLevel>
+                    <fieldName>level</fieldName>
+                </logLevel>
+
+                <loggerName>
+                    <fieldName>logger</fieldName>
+                </loggerName>
+
+                <threadName>
+                    <fieldName>thread</fieldName>
+                </threadName>
+
+                <message/>
+
+                <!-- Useful for debugging parameterized logs -->
+                <arguments>
+                    <fieldName>args</fieldName>
+                    <includeNonStructuredArguments>true</includeNonStructuredArguments>
+                </arguments>
+
+                <!-- MDC (critical for tracing/correlation) -->
+                <!-- NOTE: With omitEmptyFields=true, absent MDC keys won't appear at all. -->
+                <mdc/>
+
+                <!-- Markers can be used for routing / alerting -->
+                <logstashMarkers/>
+
+                <!-- Stack traces as structured JSON (good for ELK/Datadog/etc.) -->
+                <stackTrace>
+                    <fieldName>exception</fieldName>
+                    <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+                        <maxDepthPerThrowable>200</maxDepthPerThrowable>
+                        <maxLength>12000</maxLength>
+                        <shortenedClassNameLength>40</shortenedClassNameLength>
+                        <rootCauseFirst>true</rootCauseFirst>
+                        <inlineHash>true</inlineHash>
+                    </throwableConverter>
+                </stackTrace>
+
+                <!-- Optional: add fixed/global fields (do NOT emit empty strings) -->
+                <pattern>
+                    <pattern>
+                        {
+                        "service": {
+                        "name": "${APP_NAME}",
+                        "env":  "${APP_ENV}",
+                        "version": "${APP_VER}"
+                        },
+                        "runtime": {
+                        "host": "${HOSTNAME}"
+                        }
+                        }
+                    </pattern>
+                </pattern>
+
+                <!-- Optional: include logback context name if you use it -->
+                <!-- <contextName/> -->
+            </providers>
+        </encoder>
+    </appender>
+
+    <!-- =========================
+         Root level
+         ========================= -->
+    <root level="INFO">
+        <appender-ref ref="JSON_CONSOLE"/>
+    </root>
+
+</configuration>

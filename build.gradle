@@ -1,0 +1,65 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.3'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'sosial'
+version = '0.0.1-SNAPSHOT'
+description = 'observabilityTest'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // your starter
+    implementation "az.magusframework.components.lib:observability-spring-boot-starter:1.0-SNAPSHOT"
+
+    // logging
+    implementation "net.logstash.logback:logstash-logback-encoder:8.0"
+
+    // OTel (align versions via BOM)
+    implementation platform("io.opentelemetry:opentelemetry-bom:1.47.0")
+    implementation "io.opentelemetry:opentelemetry-api"
+    implementation "io.opentelemetry:opentelemetry-sdk"
+    implementation "io.opentelemetry:opentelemetry-exporter-otlp"  // <-- THIS makes OtlpGrpcSpanExporter available
+
+
+//    // ✅ OpenTelemetry (pin versions via BOM)
+//    implementation platform("io.opentelemetry:opentelemetry-bom:1.47.0")
+//    implementation "io.opentelemetry:opentelemetry-api"
+//    implementation "io.opentelemetry:opentelemetry-sdk"
+//
+//    // ✅ this is what provides OtlpGrpcSpanExporter
+//    implementation "io.opentelemetry:opentelemetry-exporter-otlp"
+//
+//    // ✅ optional: only if you want ResourceAttributes constants
+//    implementation "io.opentelemetry.semconv:opentelemetry-semconv:1.27.0-alpha"
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+bootJar {
+    archiveBaseName = "observability"
+    archiveVersion = ""   // optional
+}

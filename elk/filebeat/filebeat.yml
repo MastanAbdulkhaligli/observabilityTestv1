@@ -1,0 +1,66 @@
+filebeat.inputs:
+  - type: filestream
+    id: docker-containers
+    enabled: true
+
+    paths:
+      - /var/lib/docker/containers/*/*-json.log
+
+    # Proper Docker log parser (CRITICAL)
+    parsers:
+      - container: ~
+
+    # How often to scan for new files
+    prospector.scanner.check_interval: 10s
+
+    # Ignore very old logs (prevents huge backlog on restart)
+    ignore_older: 24h
+    close_inactive: 5m
+
+    processors:
+      ####################################################################
+      # Add docker metadata (container name, labels, etc)
+      ####################################################################
+      - add_docker_metadata: ~
+
+      ####################################################################
+      # ALLOW ONLY YOUR SPRING APP LOGS
+      # (everything else will be dropped)
+      ####################################################################
+      - drop_event:
+          when:
+            not:
+              or:
+                # container name (most reliable)
+                - contains:
+                    container.name: "observability-app"
+
+                # OR docker-compose service name (fallback)
+                - equals:
+                    container.labels.com_docker_compose_service: "app"
+
+      ####################################################################
+      # Optional: drop healthcheck noise
+      ####################################################################
+      - drop_event:
+          when:
+            contains:
+              message: "GET /actuator/health"
+
+########################################################################
+# Output → Logstash
+########################################################################
+output.logstash:
+  hosts: ["logstash:5044"]
+  loadbalance: true
+  worker: 1
+
+########################################################################
+# Performance tuning (safe defaults)
+########################################################################
+queue.mem:
+  events: 4096
+  flush.min_events: 512
+  flush.timeout: 5s
+
+logging.level: info

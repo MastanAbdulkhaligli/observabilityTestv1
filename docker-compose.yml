@@ -1,0 +1,118 @@
+version: "3.9"
+
+services:
+
+  # =========================================================
+  # 🟦 APP (Spring Boot + AspectJ javaagent)
+  # =========================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: observability-app
+    ports:
+      - "8080:8080"
+    environment:
+      # IMPORTANT: inside docker, do NOT use localhost for collector
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+
+      # Optional, if you use these in your OtelConfig
+      - OTEL_SERVICE_NAME=demo-service
+      - OTEL_SERVICE_VERSION=0.0.1
+      - OTEL_DEPLOYMENT_ENVIRONMENT=local
+
+      # If you run Spring on another port, set it
+      # - SERVER_PORT=8080
+    depends_on:
+      - otel-collector
+
+  # =========================================================
+  # 🔭 OTEL COLLECTOR (traces + metrics)
+  # =========================================================
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otelcol.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "8889:8889"
+    depends_on:
+      - jaeger
+
+  # =========================================================
+  # 🔥 JAEGER (TRACES UI)
+  # =========================================================
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+
+  # =========================================================
+  # 📈 PROMETHEUS (METRICS)
+  # =========================================================
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - otel-collector
+
+  # =========================================================
+  # 🟡 ELASTICSEARCH
+  # =========================================================
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+
+  # =========================================================
+  # 🟢 KIBANA (LOG UI)
+  # =========================================================
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.13.4
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+
+  # =========================================================
+  # 🔵 LOGSTASH (log pipeline)
+  # =========================================================
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.13.4
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    ports:
+      - "5044:5044"
+    depends_on:
+      - elasticsearch
+
+  # =========================================================
+  # 🟣 FILEBEAT (collect docker logs)
+  # =========================================================
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.13.4
+    user: root
+    volumes:
+      # IMPORTANT: mount the REAL file path (see note below)
+      - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - logstash
+
+volumes:
+  esdata:

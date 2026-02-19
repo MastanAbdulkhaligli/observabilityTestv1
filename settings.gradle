@@ -1,0 +1,4 @@
+rootProject.name = 'observabilityTest'
+
+
+includeBuild("/Users/mastanabdulkhaligli/Desktop/observability-lib")

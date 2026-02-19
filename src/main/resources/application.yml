@@ -1,0 +1,129 @@
+spring:
+  application:
+    name: observabilityTest
+
+
+
+
+observability:
+
+  # -------------------------------------------------------
+  # SERVICE METADATA (used in logs + metrics + spans)
+  # -------------------------------------------------------
+  service:
+    app-name: demo-app
+    service-name: demo-service
+    module: demo-module
+    component: demo-component
+    env: local
+
+  # -------------------------------------------------------
+  # HTTP OBSERVABILITY FILTER
+  # -------------------------------------------------------
+  http:
+    enabled: true
+    filter-order: -2147483638
+
+    max-cached-body-bytes: 0
+    max-body-bytes-to-parse: 4096
+    extract-magus-ids-from-json-body: false
+
+  # -------------------------------------------------------
+  # TRACING CONFIG
+  # -------------------------------------------------------
+  tracing:
+    backend: otel          # simple | otel
+
+  # -------------------------------------------------------
+  # METRICS CONFIG
+  # -------------------------------------------------------
+  metrics:
+    backend: otel          # noop | otel
+    otel:
+      duration-unit: ms    # ns | ms | s
+
+  # -------------------------------------------------------
+  # LAYER OBSERVATION POLICY (your existing feature)
+  # -------------------------------------------------------
+  layer:
+    controller: full       # full | nospan | metricsonly | disabled
+    service: full
+    repository: full
+
+  # -------------------------------------------------------
+  # ASPECTJ RUNTIME POLICY (NEW) - controls what gets observed
+  # -------------------------------------------------------
+#  aspectj:
+#    enabled: false
+#
+#    controller:
+#      enabled: true
+#      include-packages:
+#        - "demo.demo"
+#      exclude-packages: []
+#      include-regex: []
+#      exclude-regex: []
+#
+#    service:
+#      enabled: true
+#      include-packages:
+#        - "demo.demo"
+#      exclude-packages: []
+#      include-regex: []
+#      exclude-regex: []
+#
+#    repository:
+#      enabled: true
+#      include-packages:
+#        - "demos.demos"
+#      exclude-packages: []
+#      include-regex: []
+#      exclude-regex: []
+
+# =========================================================
+# OPENTELEMETRY CONFIGURATION
+# =========================================================
+otel:
+  service:
+    name: demo-service
+
+  resource:
+    attributes:
+      service.version: 1.0.0
+      deployment.environment: local
+      team: backend
+
+  traces:
+    exporter: otlp
+
+  metrics:
+    exporter: otlp
+
+  logs:
+    exporter: none
+
+  exporter:
+    otlp:
+      endpoint: http://localhost:4317
+      protocol: grpc
+      compression: gzip
+      timeout: 30000
+
+# =========================================================
+# LOGGING (JSON STRUCTURED LOGGING)
+# =========================================================
+logging:
+  level:
+    root: INFO
+    org.springframework: INFO
+    org.apache.catalina: INFO
+    io.opentelemetry: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    prometheus:
+      enabled: true
