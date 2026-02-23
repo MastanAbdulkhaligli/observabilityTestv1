@@ -21,8 +21,9 @@ configurations {
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
-    mavenLocal() // you have to add this line to work
+ // you have to add this line to work
 }
 
 dependencies {
