@@ -23,45 +23,29 @@ configurations {
 repositories {
     mavenLocal()
     mavenCentral()
- // you have to add this line to work
 }
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
-
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
-    // your starter
     implementation "az.magusframework.components.lib:observability-spring-boot-starter:1.0-SNAPSHOT"
 
-    // logging
     implementation "net.logstash.logback:logstash-logback-encoder:8.0"
 
-    // OTel (align versions via BOM)
     implementation platform("io.opentelemetry:opentelemetry-bom:1.47.0")
     implementation "io.opentelemetry:opentelemetry-api"
     implementation "io.opentelemetry:opentelemetry-sdk"
-    implementation "io.opentelemetry:opentelemetry-exporter-otlp"  // <-- THIS makes OtlpGrpcSpanExporter available
-
-
-//    // ✅ OpenTelemetry (pin versions via BOM)
-//    implementation platform("io.opentelemetry:opentelemetry-bom:1.47.0")
-//    implementation "io.opentelemetry:opentelemetry-api"
-//    implementation "io.opentelemetry:opentelemetry-sdk"
-//
-//    // ✅ this is what provides OtlpGrpcSpanExporter
-//    implementation "io.opentelemetry:opentelemetry-exporter-otlp"
-//
-//    // ✅ optional: only if you want ResourceAttributes constants
-//    implementation "io.opentelemetry.semconv:opentelemetry-semconv:1.27.0-alpha"
+    implementation "io.opentelemetry:opentelemetry-exporter-otlp"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
+
 tasks.named('test') {
     useJUnitPlatform()
 }
 
 bootJar {
     archiveBaseName = "observability"
-    archiveVersion = ""   // optional
+    archiveVersion = ""
 }
